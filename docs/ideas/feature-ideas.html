@@ -1,0 +1,178 @@
+<title>Mark 1 Feature Ideas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a single reading column of idea cards grouped by day, with three views (Inbox, Accepted, On hold). */
+:root {
+  --bg: #f6f7f5; --surface: #ffffff; --fg: #1c2421; --muted: #5d6b66; --line: #dde3df;
+  --accent: #0f6b5c; --accent-soft: #e2f1ed;
+  --accept: #1f7a3f; --reject: #a63d2f; --hold: #8a6a12;
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111614; --surface: #1a211e; --fg: #e4ebe7; --muted: #98a6a0; --line: #2c3632;
+  --accent: #5cc3ad; --accent-soft: #1d332d; --accept: #6fcf8f; --reject: #f08a7a; --hold: #e0c062; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #1a211e; --fg: #e4ebe7; --muted: #98a6a0; --line: #2c3632;
+  --accent: #5cc3ad; --accent-soft: #1d332d; --accept: #6fcf8f; --reject: #f08a7a; --hold: #e0c062; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header h1 { font-size: 28px; margin: 0 0 4px; font-weight: 600; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 65ch; }
+.tabs { display: flex; gap: 8px; margin: 20px 0 8px; flex-wrap: wrap; }
+.tab { font: inherit; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab .n { font-family: var(--mono); font-size: 12px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.day { margin-top: 28px; }
+.day h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 4px; font-weight: 600; }
+.section-title { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 10px; flex-wrap: wrap; }
+.section-title h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.section-title span { color: var(--muted); font-size: 13px; }
+.cards { display: grid; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.card h4 { margin: 0; font-size: 16px; font-weight: 600; }
+.card p { margin: 0; max-width: 70ch; }
+.why { color: var(--muted); font-size: 14px; }
+.meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+.chip { font-family: var(--mono); padding: 2px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+.chip.plain { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.meta a { color: var(--accent); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.btn.accept { color: var(--accept); border-color: currentColor; }
+.btn.reject { color: var(--reject); border-color: currentColor; }
+.btn.hold { color: var(--hold); border-color: currentColor; }
+.btn:disabled { opacity: .5; cursor: default; }
+.status { font-size: 13px; color: var(--muted); }
+.empty { margin-top: 28px; padding: 20px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
+.note { margin-top: 10px; font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .card { transition: opacity .2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Mark 1 Feature Ideas</h1>
+    <p>Each morning: one competitor's best features, plus original ideas no telehealth app has yet. Accept adds an idea to the Mark 1 feature list, On hold parks it, Reject removes it for good.</p>
+  </header>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-inbox" data-view="inbox" aria-selected="true">To decide<span class="n" id="n-inbox">0</span></button>
+    <button class="tab" role="tab" id="tab-accepted" data-view="accepted" aria-selected="false">Accepted<span class="n" id="n-accepted">0</span></button>
+    <button class="tab" role="tab" id="tab-hold" data-view="hold" aria-selected="false">On hold<span class="n" id="n-hold">0</span></button>
+  </nav>
+  <div class="status" id="status">Loading ideas…</div>
+  <main id="list"></main>
+</div>
+
+<script>
+(function () {
+  var ideas = [], runs = {}, view = "inbox", db = null, readOnly = false;
+  try { var saved = localStorage.getItem("m1-view"); if (saved) view = saved; } catch (e) {}
+  if (["inbox","accepted","hold"].indexOf(view) < 0) view = "inbox";
+  var list = document.getElementById("list"), statusEl = document.getElementById("status");
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function fmtDate(d) {
+    var p = String(d || "").split("-"); if (p.length !== 3) return d || "";
+    var dt = new Date(Date.UTC(+p[0], +p[1]-1, +p[2]));
+    return dt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  }
+
+  function setStatus(id, status, btns) {
+    if (!db || readOnly) return;
+    btns.forEach(function (b) { b.disabled = true; });
+    db.collection("ideas").doc(id).update({ status: status, decidedAt: new Date().toISOString() })
+      .catch(function (e) {
+        btns.forEach(function (b) { b.disabled = false; });
+        if (e && e.code === "invalid_argument") { readOnly = true; statusEl.textContent = "You can view these ideas but not change them."; render(); }
+        else statusEl.textContent = "Couldn't save that choice. Try again in a moment.";
+      });
+  }
+
+  function card(d) {
+    var c = el("article", "card");
+    c.appendChild(el("h4", null, d.title));
+    if (d.description) c.appendChild(el("p", null, d.description));
+    if (d.whyItMatters) c.appendChild(el("p", "why", "Why it matters: " + d.whyItMatters));
+    var m = el("div", "meta");
+    if (d.effort) m.appendChild(el("span", "chip plain", "Effort " + d.effort));
+    if (d.ai) m.appendChild(el("span", "chip", "AI"));
+    if (d.section === "competitor" && d.competitor) m.appendChild(el("span", "chip plain", "From " + d.competitor));
+    if (d.section === "original") m.appendChild(el("span", "chip plain", "Original"));
+    if (view !== "inbox" && d.date) m.appendChild(el("span", "chip plain", d.date));
+    if (d.source && /^https:\/\//.test(d.source)) { var a = el("a", null, "Source"); a.href = d.source; a.target = "_blank"; a.rel = "noopener"; m.appendChild(a); }
+    c.appendChild(m);
+    if (!readOnly && db) {
+      var acts = el("div", "actions"), btns = [];
+      var opts = d.status === "accepted" ? [["hold","Move to on hold"],["rejected","Reject"]]
+               : d.status === "hold" ? [["accepted","Accept"],["rejected","Reject"]]
+               : [["accepted","Accept"],["hold","On hold"],["rejected","Reject"]];
+      opts.forEach(function (o) {
+        var b = el("button", "btn " + (o[0] === "accepted" ? "accept" : o[0] === "hold" ? "hold" : "reject"), o[1]);
+        b.type = "button"; b.addEventListener("click", function () { setStatus(d.id, o[0], btns); });
+        btns.push(b); acts.appendChild(b);
+      });
+      c.appendChild(acts);
+    }
+    return c;
+  }
+
+  function section(title, sub, items) {
+    var f = document.createDocumentFragment();
+    var t = el("div", "section-title"); t.appendChild(el("h3", null, title)); if (sub) t.appendChild(el("span", null, sub));
+    f.appendChild(t);
+    var g = el("div", "cards"); items.forEach(function (d) { g.appendChild(card(d)); }); f.appendChild(g);
+    return f;
+  }
+
+  function render() {
+    var counts = { inbox: 0, accepted: 0, hold: 0 };
+    ideas.forEach(function (d) { if (d.status === "accepted") counts.accepted++; else if (d.status === "hold") counts.hold++; else if (d.status !== "rejected") counts.inbox++; });
+    Object.keys(counts).forEach(function (k) { document.getElementById("n-" + k).textContent = counts[k]; });
+    document.querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-selected", t.dataset.view === view ? "true" : "false"); });
+    list.textContent = "";
+    var want = view === "inbox" ? function (d) { return !d.status || d.status === "new"; } : function (d) { return d.status === view; };
+    var shown = ideas.filter(want);
+    if (!shown.length) {
+      var msg = view === "inbox" ? "Nothing left to decide. The next batch arrives tomorrow morning (Pakistan time)."
+              : view === "accepted" ? "No accepted ideas yet. Accept ideas from the To decide tab and they collect here."
+              : "Nothing on hold. Ideas you put on hold wait here until you decide.";
+      list.appendChild(el("div", "empty", msg)); return;
+    }
+    var byDate = {};
+    shown.forEach(function (d) { (byDate[d.date] = byDate[d.date] || []).push(d); });
+    Object.keys(byDate).sort().reverse().forEach(function (date) {
+      var items = byDate[date].sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+      var day = el("section", "day"); day.appendChild(el("h2", null, fmtDate(date)));
+      var comp = items.filter(function (d) { return d.section === "competitor"; });
+      var orig = items.filter(function (d) { return d.section === "original"; });
+      var who = (runs[date] && runs[date].competitor) || (comp[0] && comp[0].competitor) || "";
+      if (comp.length) day.appendChild(section("From competitors", who ? "Today: " + who : "", comp));
+      if (orig.length) day.appendChild(section("Original ideas", "Not seen in other telehealth apps", orig));
+      list.appendChild(day);
+    });
+  }
+
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.addEventListener("click", function () { view = t.dataset.view; try { localStorage.setItem("m1-view", view); } catch (e) {} render(); });
+  });
+
+  render();
+  if (!window.claude || !window.claude.use) { statusEl.textContent = "Open this page in Claude to see the ideas."; return; }
+  window.claude.use("db").then(function (d) {
+    db = d;
+    if (!db) { statusEl.textContent = "Sign in to see and decide on ideas."; return; }
+    db.collection("ideas").onSnapshot(function (snap) {
+      ideas = snap.docs.map(function (s) { var x = Object.assign({}, s.data()); x.id = s.id; return x; });
+      statusEl.textContent = ideas.length ? "" : "The first batch of ideas is on its way.";
+      render();
+    }, function () { statusEl.textContent = "Ideas couldn't load. Reload the page to try again."; });
+    db.collection("runs").onSnapshot(function (snap) {
+      runs = {}; snap.docs.forEach(function (s) { runs[s.id] = s.data(); }); render();
+    }, function () {});
+  });
+})();
+</script>
