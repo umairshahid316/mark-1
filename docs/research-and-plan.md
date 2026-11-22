@@ -4,6 +4,57 @@ Mark 1 is the working name for a telehealth / virtual-clinic SaaS for doctors an
 
 Whiteboard: https://claude.ai/artifact/1yoptYkNsFavXjWNERxYEN · Feature sheet: `docs/mark1-features.xlsx`
 
+## Update 2026-11-22: V1 direction (replaces conflicting parts below)
+
+These are the owner's decisions after reviewing v1 of this plan. Where they conflict with sections 1–11 below, this section wins.
+
+**Decisions**
+- **Roles:** Admin (us) creates doctor accounts. Doctors use the platform. Patients sign up through a doctor's personal link.
+- **Patient model:** a patient joins the doctor whose link they used. If a second doctor shares their link, the existing account is linked to that doctor too, with no new signup. Doctors never see each other, each doctor sees only their own patients' data, and there is no doctor directory.
+- **Money:** doctors pay Mark 1 a monthly fee outside the platform. There are no patient payments in V1. If patient payments come later, 100% goes to the doctor. No insurance billing, ever.
+- **Video:** Google Meet. The doctor connects their own Google account and Mark 1 creates a Meet link for each booking through the Google Calendar API, free to us. Doctors can paste their own Zoom, Doxy or Teams link instead.
+- **Clinics:** individual doctors only in V1 (assumed, to confirm). Clinics with several doctors come in v2.
+- **GDPR** is built in from the start. The goal is to sell internationally.
+- **Costs:** keep third-party spend minimal. Target about $15–40/month to run.
+- **Files:** no file storage in V1. Later, Wasabi or S3.
+
+**Answers to the owner's questions**
+- **What HIPAA is:** a US law saying patient health information must be protected. Any company that stores it for a US doctor must protect it and sign a contract with the doctor called a BAA (Business Associate Agreement).
+- **"We're not a healthcare company, so no legal rules apply" is not correct.** The rules follow the *data*, not who employs the doctors. Patient names, bookings and doctor notes are health data.
+  - US doctors who bill insurance must have a BAA with any software that holds their patients' data.
+  - EU patients are covered by GDPR, which treats health data as a "special category" with stricter rules.
+  - Purely cash-only US doctors are generally outside HIPAA.
+  - The practical cost is small: pick vendors that sign BAAs or DPAs (the GDPR equivalent), follow basic security, and have BAA, DPA and privacy policy templates.
+- **Why RDS for row-level security? We don't need it.** Row-level security is built into Postgres itself. RDS is only Amazon running Postgres for you (backups and updates). Any Postgres works, including one on the same small server as the app.
+- **"S3 is expensive" isn't true at our size.** S3 costs about $0.023/GB, so 50 GB is about $1.15/month. Wasabi charges a 1 TB minimum (about $6.99/month) and keeps files for at least 90 days, so it's only cheaper above roughly 300 GB. Both sign a BAA (Wasabi through its sales team).
+- **What Meet costs us in capability:**
+  - Mark 1 can't access the call, so there's no AI transcription of the visit itself.
+  - Google has to verify the app before it can create calendar events for the public. Verification is free but takes weeks, so apply early.
+  - US doctors who need HIPAA must use paid Google Workspace with Google's BAA. That's the doctor's responsibility, but we must tell them.
+- **"Free AI" doesn't really exist for patient data:** free tiers usually let the provider use your data. The low-cost path is:
+  1. Dictation after the visit, with speech-to-text running **in the doctor's browser** using open-source Whisper. This costs us $0, and the audio never leaves the doctor's device.
+  2. A pay-per-use text AI API with a data agreement, used to structure the dictation into a SOAP note. Expected cost is about $1–5/month at the start.
+  3. Doctors on paid Google Workspace can also use Meet's own built-in note-taking.
+
+**Revised V1 scope:** see `mark1-features.xlsx`. In short:
+- **Admin:** create doctor accounts, track plan and paid-until date, activate or suspend doctors.
+- **Doctor:** availability, personal booking link, calendar, patient list, patient profile and history, intake form, notes with dictation and AI, auto Meet links, email reminders.
+- **Patient:** join through a doctor's link, book, reschedule or cancel, fill in the intake form, export or delete their data.
+- **For everyone:** consent, audit log, encryption, MFA.
+
+**Revised architecture (about $15–40/month):**
+- Next.js + TypeScript and Postgres with row-level security per doctor, on one small server.
+- **Hosting is still open.** A small AWS server costs about $10–20/month and AWS signs the BAA for free (recommended). A cheap EU VPS costs about €5–10/month and handles GDPR, but its providers usually won't sign a BAA.
+- Google Calendar API for Meet links (free) · email reminders with no health details · browser Whisper plus a pay-per-use text AI API.
+
+**Removed from V1:** patient payments and Stripe Connect · built-in video · AI transcription of live calls · file uploads · insurance billing and e-prescribing · the niche-specialty strategy (on hold; still recommended for selling).
+
+Extra sources: https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html · https://docs.wasabi.com/docs/how-does-wasabi-address-health-care-privacy-compliance · https://docs.wasabi.com/docs/how-does-wasabis-monthly-minimum-storage-charge-work · https://gsuite-developers.googleblog.com/2017/12/hangouts-meet-now-available-in-google.html · https://cpaas.8x8.com/en/pricing/jitsi-as-a-service-pricing/
+
+---
+
+## v1 plan (original research)
+
 Prices below come mostly from third-party review sites that often disagree with each other. Treat them as approximate and verify on vendor pages before deciding anything.
 
 ---
